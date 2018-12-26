@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">FetchMyMatch</string>
+    <string name="search">Google image search</string>
+    <string name="fetch">Fetch</string>
+    <string name="view">View</string>
+    <string name="description">Image View</string>
+
+</resources>

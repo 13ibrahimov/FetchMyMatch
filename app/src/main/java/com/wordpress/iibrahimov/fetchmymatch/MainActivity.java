@@ -16,6 +16,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.net.URL;
@@ -61,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
                 searchUrl = ("https://google.com/search?q=" + searchUrl + "&tbm=isch").toLowerCase();
 
                 //Run Async Task which handles google image search
-                new GoogleScrape().execute(searchUrl);
+                new GoogleScrape(MainActivity.this).execute(searchUrl);
             }
                                        });
 
@@ -102,7 +103,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //Async Task to perform network operations
-    private class GoogleScrape extends AsyncTask<String,String,String> {
+    private static class GoogleScrape extends AsyncTask<String,Void,String> {
+
+        /*
+        To prevent memory leaks from AsyncTask, it is made static
+        and a weak reference to the activity is retained(collectible by garbage collector)
+        for accessing UI views and member variables
+         */
+        private WeakReference<MainActivity> activityReference;
+
+        GoogleScrape(MainActivity context) {
+            activityReference = new WeakReference<>(context);
+        }
 
         //imgUrls: list that stores image source urls from google image search
         //could be used to increase number of downloads each search if needed(currently 1)
@@ -145,11 +157,15 @@ public class MainActivity extends AppCompatActivity {
         //And downloads that image
         protected void onPostExecute(String result) {
 
-            finalUrl = imgUrls.get(0);
+            //If activity is still live, get a reference to it
+            MainActivity activity = activityReference.get();
+            if (activity == null || activity.isFinishing()) return;
 
-            dmanager = (DownloadManager)getSystemService(DOWNLOAD_SERVICE);
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(finalUrl));
-            requestid = dmanager.enqueue(request);
+            activity.finalUrl = imgUrls.get(0);
+
+            activity.dmanager = (DownloadManager)activity.getSystemService(Context.DOWNLOAD_SERVICE);
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(activity.finalUrl));
+            activity.requestid = activity.dmanager.enqueue(request);
         }
     }
 
